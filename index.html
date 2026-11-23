@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#080e19" />
+    <title>STARK OS · Control gestual</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <strong>STARK<span> OS</span></strong>
+          <p>Estación de control gestual</p>
+        </div>
+        <div id="privacy" role="status">Cámara apagada</div>
+      </header>
+      <p id="message" role="status" aria-live="polite"></p>
+      <div class="layout">
+        <section class="camera-panel">
+          <div class="heading">
+            <h1>Cámara y manos</h1>
+            <output id="fps">0 FPS</output>
+          </div>
+          <div class="sensor">
+            <div id="feed"><video id="camera" muted playsinline></video></div>
+            <canvas
+              id="landmarks"
+              width="640"
+              height="480"
+              aria-label="Puntos de referencia de las manos"
+            ></canvas>
+            <p id="sensor-status">Cámara apagada</p>
+          </div>
+          <div class="controls">
+            <button class="primary" id="start">Probar cámara</button>
+            <button id="visibility" disabled>Ocultar cámara</button>
+            <button id="stop" disabled>Detener cámara</button>
+            <button id="gestures" disabled>Activar gestos</button>
+            <button id="calibrate" disabled>Calibrar manos</button>
+            <label for="devices">Cambiar cámara</label>
+            <select id="devices" disabled aria-label="Cambiar cámara"></select>
+          </div>
+          <p id="hands" aria-live="off">0 manos</p>
+          <details>
+            <summary>Configuración de gestos</summary>
+            <div class="settings">
+              <label
+                >Mano preferida
+                <select id="side">
+                  <option value="Right">Derecha</option>
+                  <option value="Left">Izquierda</option>
+                </select></label
+              >
+              <label
+                >Sensibilidad del pellizco
+                <input
+                  id="sensitivity"
+                  type="range"
+                  min="0.18"
+                  max="0.6"
+                  step="0.01"
+                  value="0.38"
+              /></label>
+              <label
+                >Tiempo de activación
+                <select id="hold">
+                  <option value="300">300 ms</option>
+                  <option value="450">450 ms</option>
+                  <option value="650">650 ms</option>
+                </select></label
+              >
+              <label
+                >Rendimiento
+                <select id="performance">
+                  <option value="30">30 FPS</option>
+                  <option value="15">15 FPS</option>
+                </select></label
+              >
+            </div>
+          </details>
+        </section>
+        <section class="workspace">
+          <div class="heading"><h2>Área de trabajo</h2></div>
+          <nav aria-label="Área de trabajo">
+            <button id="tab-video" aria-pressed="true">Vídeo</button
+            ><button id="tab-editor" aria-pressed="false">Editor 3D</button>
+          </nav>
+          <div id="video-panel">
+            <video
+              id="player"
+              controls
+              playsinline
+              preload="metadata"
+              aria-label="Reproductor STARK VIDEO ENGINE"
+            ></video>
+            <div class="controls">
+              <label class="file"
+                >Añadir vídeos
+                <input id="videos" type="file" accept="video/*" multiple
+              /></label>
+              <select
+                id="playlist"
+                aria-label="Lista de reproducción"
+                disabled
+              ></select>
+              <label
+                >Salto
+                <select id="jump">
+                  <option>5</option>
+                  <option selected>10</option>
+                  <option>30</option>
+                </select>
+                s</label
+              >
+              <button id="back">Retroceder</button
+              ><button id="forward">Avanzar</button>
+              <label
+                >Velocidad
+                <select id="speed">
+                  <option>0.5</option>
+                  <option selected>1</option>
+                  <option>1.5</option>
+                  <option>2</option>
+                </select></label
+              >
+              <button id="mute">Silenciar / activar audio</button>
+              <button id="fullscreen">Pantalla completa</button>
+            </div>
+            <p>
+              Pellizca para reproducir o pausar, abre la palma para avanzar y
+              cierra el puño para retroceder. Relaja la mano entre acciones.
+            </p>
+          </div>
+          <div id="editor-panel" hidden>
+            <div id="scene"><span id="cursor" hidden></span></div>
+            <div id="editor-controls" class="controls">
+              <button id="cube">Cubo</button><button id="sphere">Esfera</button
+              ><button id="cylinder">Cilindro</button>
+              <label
+                >Color <input id="color" type="color" value="#28cadc"
+              /></label>
+              <button id="rotate">Girar</button
+              ><button id="smaller">Reducir</button
+              ><button id="larger">Ampliar</button>
+              <button id="duplicate">Duplicar</button
+              ><button id="delete">Eliminar</button>
+              <button id="undo">Deshacer</button
+              ><button id="redo">Rehacer</button>
+              <button id="save">Guardar JSON</button
+              ><label class="file"
+                >Cargar JSON
+                <input id="load" type="file" accept=".json,application/json"
+              /></label>
+              <button id="export">Exportar GLB</button>
+            </div>
+            <p>
+              Arrastra con el puntero o mantén un pellizco sobre una figura. Usa
+              la palma para girar y el puño para ajustar la escala según la
+              altura de la mano.
+            </p>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/apps/web/main.ts"></script>
+  </body>
+</html>
