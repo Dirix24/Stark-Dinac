@@ -1,5 +1,6 @@
 import "./style.css";
 import { Camera, cameraError } from "../../packages/camera-engine";
+import { ClapToggle } from "./clap";
 import { DesktopGestures, type Hand } from "./gestures";
 import type { PointerFrame } from "./pointer";
 import { createTracker, drawHands } from "../../packages/hand-tracking";
@@ -43,6 +44,7 @@ let animation = 0;
 let lastTime = -Infinity;
 let lastVideo = -1;
 const gestures = new DesktopGestures();
+const clap = new ClapToggle();
 const scrollLabels = {
   up: "hacia arriba",
   down: "hacia abajo",
@@ -100,20 +102,26 @@ function pauseControl(reason = "") {
   armRequest++;
   arming = false;
   controlling = false;
-  cancelAnimationFrame(animation);
   gestures.reset();
-  left.removeAttribute("data-detected");
-  right.removeAttribute("data-detected");
   desktop.pause();
-  drawHands(overlay);
   message.textContent = reason;
   refresh();
+}
+
+function stopTracking() {
+  cancelAnimationFrame(animation);
+  animation = 0;
+  clap.reset();
+  left.removeAttribute("data-detected");
+  right.removeAttribute("data-detected");
+  drawHands(overlay);
 }
 
 function stopCamera(reason = "") {
   cameraRequest++;
   starting = false;
   camera.stop();
+  stopTracking();
   pauseControl(reason);
   void listCameras();
 }
@@ -121,12 +129,14 @@ function stopCamera(reason = "") {
 async function openCamera(deviceId: string) {
   const request = ++cameraRequest;
   listing++;
+  stopTracking();
   pauseControl();
   starting = true;
   const pending = camera.start(deviceId || undefined);
   refresh();
   try {
-    await pending;
+    if ((await pending) && request === cameraRequest)
+      void prepareTracking(request);
   } catch (error) {
     if (request === cameraRequest) message.textContent = cameraError(error);
   } finally {
@@ -139,7 +149,10 @@ async function openCamera(deviceId: string) {
 }
 
 function trackFrame(time: number) {
-  if (!controlling || !tracker) return;
+  if (!camera.active || !tracker) {
+    animation = 0;
+    return;
+  }
   if (
     time - lastTime >= 22 &&
     video.readyState >= 2 &&
@@ -170,34 +183,74 @@ function trackFrame(time: number) {
         "data-detected",
         hands.some(({ side }) => side === "Right"),
       );
-      const frame = gestures.update(hands, time);
-      desktop.pointer(frame);
-      const status = frame.action
-        ? frame.action === "double"
-          ? "Control activo · Doble clic"
-          : "Control activo · Clic derecho"
-        : frame.selection
-          ? frame.selection === "ctrl"
-            ? "Control activo · Selección múltiple"
-            : "Control activo · Selección de intervalo"
-          : frame.scroll
-            ? "Control activo · Scroll " + scrollLabels[frame.scroll]
-            : frame.resize
-              ? frame.resize.offset
-                ? "Control activo · Ventana con dos manos"
-                : "Control activo · Cambiando tamaño"
-              : frame.down
-                ? "Control activo · Botón pulsado"
-                : frame.x === undefined
-                  ? "Control activo · Muestra una o dos manos"
-                  : "Control activo";
-      if (state.textContent !== status) state.textContent = status;
+      if (clap.update(hands, time, video.videoWidth / video.videoHeight)) {
+        toggleControl();
+      } else if (controlling) {
+        const frame = gestures.update(hands, time);
+        desktop.pointer(frame);
+        const status = frame.action
+          ? frame.action === "double"
+            ? "Control activo · Doble clic"
+            : "Control activo · Clic derecho"
+          : frame.selection
+            ? frame.selection === "ctrl"
+              ? "Control activo · Selección múltiple"
+              : "Control activo · Selección de intervalo"
+            : frame.scroll
+              ? "Control activo · Scroll " + scrollLabels[frame.scroll]
+              : frame.resize
+                ? frame.resize.offset
+                  ? "Control activo · Ventana con dos manos"
+                  : "Control activo · Cambiando tamaño"
+                : frame.down
+                  ? "Control activo · Botón pulsado"
+                  : frame.x === undefined
+                    ? "Control activo · Muestra una o dos manos"
+                    : "Control activo";
+        if (state.textContent !== status) state.textContent = status;
+      }
     } catch {
+      stopTracking();
+      tracker.close();
+      tracker = undefined;
       pauseControl("Se interrumpió el seguimiento de la mano.");
       return;
     }
   }
   animation = requestAnimationFrame(trackFrame);
+}
+
+async function ensureTracking(request: number) {
+  if (!tracker) {
+    trackerLoading ??= createTracker({
+      numHands: 2,
+      wasmRoot: new URL(".", location.href).href.replace(/\/$/, ""),
+    }).finally(() => {
+      trackerLoading = undefined;
+    });
+    tracker = await trackerLoading;
+  }
+  if (request === cameraRequest && camera.active && !animation) {
+    lastTime = -Infinity;
+    lastVideo = -1;
+    animation = requestAnimationFrame(trackFrame);
+  }
+}
+
+async function prepareTracking(request: number) {
+  try {
+    await ensureTracking(request);
+  } catch {
+    if (request === cameraRequest && !arming) {
+      message.textContent =
+        "No se pudo cargar el seguimiento. Pulsa Activar control para reintentar.";
+    }
+  }
+}
+
+function toggleControl() {
+  if (controlling || arming) pauseControl();
+  else void armControl();
 }
 
 async function armControl() {
@@ -207,25 +260,14 @@ async function armControl() {
   message.textContent = "Cargando el seguimiento de manos…";
   refresh();
   try {
-    if (!tracker) {
-      trackerLoading ??= createTracker({
-        numHands: 2,
-        wasmRoot: new URL(".", location.href).href.replace(/\/$/, ""),
-      }).finally(() => {
-        trackerLoading = undefined;
-      });
-      tracker = await trackerLoading;
-    }
+    await ensureTracking(cameraRequest);
     if (request !== armRequest) return;
     const error = await desktop.arm();
     if (request !== armRequest) return;
     if (error) throw new Error(error);
     controlling = true;
-    lastTime = -Infinity;
-    lastVideo = -1;
     state.textContent = "Control activo · Muestra una o dos manos";
     message.textContent = "";
-    animation = requestAnimationFrame(trackFrame);
   } catch (error) {
     if (request === armRequest) {
       pauseControl(
@@ -244,8 +286,7 @@ async function armControl() {
 
 cameraToggle.onclick = () =>
   camera.active || starting ? stopCamera() : void openCamera(picker.value);
-controlToggle.onclick = () =>
-  controlling || arming ? pauseControl() : void armControl();
+controlToggle.onclick = toggleControl;
 picker.onchange = () => {
   if (camera.active) void openCamera(picker.value);
 };
@@ -261,6 +302,7 @@ window.addEventListener("focus", () => void listCameras());
 window.addEventListener("pagehide", () => {
   desktop.pause();
   camera.stop();
+  stopTracking();
   tracker?.close();
 });
 refresh();

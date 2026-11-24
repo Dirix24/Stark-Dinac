@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { ClapToggle } from "../apps/desktop/clap";
 import { DesktopGestures, type Side } from "../apps/desktop/gestures";
 import { GesturePointer } from "../apps/desktop/pointer";
 import { scrollDirection } from "../apps/desktop/scroll";
@@ -365,6 +366,46 @@ function landmarks(pose: "palm" | "pinch" | "fist"): Point[] {
   points[4].y = pose === "palm" ? 0.6 : pose === "pinch" ? 0.37 : 0.57;
   return points;
 }
+
+function clapHands(gap: number, pose: "palm" | "pinch" = "palm") {
+  return [0.5 - gap / 2, 0.5 + gap / 2].map((x) => ({
+    points: landmarks(pose).map((point) => ({
+      ...point,
+      x: point.x + x - 0.5,
+    })),
+  }));
+}
+
+test("one clap toggles once and a new clap needs separation and a short pause", () => {
+  const detector = new ClapToggle();
+  const update = (gap: number, time: number) =>
+    detector.update(clapHands(gap), time, 4 / 3);
+
+  assert.equal(update(0.06, 0), false);
+  assert.equal(update(0.52, 100), false);
+  assert.equal(update(0.23, 180), false);
+  assert.equal(update(0.06, 240), true);
+  assert.equal(update(0.06, 420), false);
+  assert.equal(update(0.52, 480), false);
+  assert.equal(update(0.06, 550), false);
+  assert.equal(update(0.52, 680), false);
+  assert.equal(update(0.06, 760), true);
+});
+
+test("slow approach, pinches and hands disappearing cannot trigger a clap", () => {
+  const detector = new ClapToggle();
+  const update = (gap: number, time: number) =>
+    detector.update(clapHands(gap), time, 4 / 3);
+
+  assert.equal(update(0.52, 0), false);
+  assert.equal(update(0.06, 530), false);
+  assert.equal(update(0.52, 600), false);
+  assert.equal(detector.update(clapHands(0.06, "pinch"), 700, 4 / 3), false);
+  assert.equal(update(0.06, 720), false);
+  assert.equal(update(0.52, 800), false);
+  assert.equal(detector.update(clapHands(0.16).slice(0, 1), 850, 4 / 3), false);
+  assert.equal(update(0.06, 900), false);
+});
 
 test("landmark classification covers palm, pinch, fist and no hand", () => {
   for (const pose of ["palm", "pinch", "fist"] as const)

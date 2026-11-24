@@ -18,31 +18,47 @@ npm ci
 npm run desktop
 ```
 
-Pulsa **Activar cámara** y elige un dispositivo si aparecen varios. Luego
-pulsa **Activar control**. La vista marca la mano **izquierda en azul** y la
-**derecha en verde**. Cuando hay dos manos visibles, el puntero sigue la que
-ya estabas usando hasta que la bajes.
+### Instrucciones de uso
 
-| Acción                                    | Gesto                                                                                                                                                                                                        |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Mover el puntero                          | Mueve el índice de cualquiera de las manos.                                                                                                                                                                  |
-| Seleccionar o hacer clic                  | Junta el pulgar y el índice hasta que aparezca **Botón pulsado** y suelta.                                                                                                                                   |
-| Doble clic                                | Junta unos instantes el pulgar y el meñique.                                                                                                                                                                 |
-| Menú contextual                           | Junta unos instantes el pulgar y el anular para hacer clic derecho.                                                                                                                                          |
-| Agarrar y soltar                          | Apunta al elemento, cierra el puño y mueve la mano. Abre la mano para soltar. También puedes mantener el pellizco de pulgar e índice.                                                                        |
-| Añadir o quitar elementos de la selección | Con la otra mano, mantén pulgar y anular mientras haces clic con la mano del puntero. Equivale a Ctrl + clic.                                                                                                |
-| Seleccionar un intervalo                  | Con la otra mano, mantén pulgar y meñique mientras haces clic con la mano del puntero. Equivale a Mayús + clic.                                                                                              |
-| Scroll vertical u horizontal              | Coloca el puntero sobre el contenido. Extiende solo el índice y el dedo medio y apunta arriba, abajo, a la izquierda o a la derecha. Mantén el gesto para repetir el scroll y baja los dedos para detenerlo. |
-| Mover una ventana                         | Sitúa el puntero en la barra de título, mantén el pellizco de índice y pulgar y desplaza la mano.                                                                                                            |
-| Ampliar o reducir con una mano            | Selecciona la ventana. Junta el pulgar y el dedo medio. Sube la mano para ampliar o bájala para reducir.                                                                                                     |
-| Mover, ampliar o reducir con dos manos    | Selecciona la ventana. Junta pulgar e índice en las dos manos al mismo tiempo. Muévelas juntas para desplazar la ventana. Sepáralas para ampliar o acércalas para reducir.                                   |
+Pulsa **Activar cámara** y elige un dispositivo si aparecen varios. La vista
+marca la mano **izquierda en azul** y la **derecha en verde**.
 
-El puntero conserva su posición durante el gesto de scroll. El desplazamiento
-horizontal funciona en aplicaciones y paneles que aceptan rueda horizontal.
+**Activar y pausar con un aplauso.** Con las dos manos abiertas y separadas
+dentro del encuadre, júntalas rápido para aplaudir. Un aplauso activa el
+control y el siguiente lo pausa. Separa las manos entre aplausos. La cámara
+sigue encendida durante la pausa para detectar el siguiente aplauso. La
+detección es visual. También puedes usar **Activar control**, **Pausar
+control** o **Ctrl + Mayús + F8** desde cualquier ventana. Usa **Apagar
+cámara** para detener la detección.
 
-Suelta el gesto para terminar. La aplicación cambia el tamaño de la ventana
-activa. Si está maximizada, restaura su tamaño antes de usar el gesto.
-Pulsa **Ctrl + Mayús + F8** para pausar desde cualquier ventana.
+**Puntero y selección.** Mueve el índice de cualquiera de las manos. Junta
+pulgar e índice y suelta para hacer clic. Si hay dos manos visibles, el
+puntero sigue la mano que ya estabas usando hasta que la bajes.
+
+**Doble clic y menú contextual.** Junta pulgar y meñique para hacer doble
+clic. Junta pulgar y anular para hacer clic derecho.
+
+**Selección con dos manos.** Con la otra mano, mantén pulgar y anular para
+Ctrl, o pulgar y meñique para Mayús. Haz clic con la mano del puntero para
+añadir o quitar elementos (Ctrl) o seleccionar un intervalo (Mayús).
+
+**Mover ventana.** Apunta a la barra de título, mantén el pellizco o cierra
+el puño y desplaza la mano. Separa los dedos o abre el puño para soltar.
+El mismo gesto permite agarrar y arrastrar objetos.
+
+**Scroll con dos dedos.** Coloca el puntero sobre el contenido. Extiende solo
+el índice y el dedo medio y apunta arriba, abajo o a un lado. Mantén el gesto
+para seguir desplazando y baja los dedos para parar. El puntero permanece
+quieto. El desplazamiento lateral funciona en aplicaciones con scroll
+horizontal.
+
+**Tamaño con una mano.** Selecciona una ventana. Junta pulgar y dedo medio.
+Sube para ampliar o baja para reducir.
+
+**Ventana con dos manos.** Selecciona una ventana y pellizca con pulgar e
+índice en ambas manos. Muévelas juntas para desplazar la ventana. Sepáralas
+para ampliar o acércalas para reducir. Si la ventana está maximizada,
+restaura su tamaño antes de redimensionarla.
 
 El puntero utiliza una conexión XTest persistente y responde con menos
 suavizado cuando la mano se mueve rápido. La cámara y el seguimiento
@@ -50,13 +66,13 @@ determinan la frecuencia de actualización. Los gestos de pulsación tienen
 una confirmación breve para evitar clics involuntarios.
 
 El seguimiento se ejecuta localmente y requiere conexión para descargar el
-modelo de MediaPipe al activar el control. El control nativo requiere Linux
+modelo de MediaPipe al activar la cámara. El control nativo requiere Linux
 X11. La versión web está disponible para los demás entornos. Para generar e
 instalar un paquete en MX Linux x86_64, ejecuta:
 
 ```sh
 npm run package:linux
-sudo apt install ./stark-dinac_0.4.0_amd64.deb
+sudo apt install ./stark-dinac_0.5.0_amd64.deb
 ```
 
 ## Instalación y ejecución de la versión web
