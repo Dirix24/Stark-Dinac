@@ -23,13 +23,13 @@ pulsa **Activar control**. La vista marca la mano **izquierda en azul** y la
 **derecha en verde**. Cuando hay dos manos visibles, el puntero sigue la que
 ya estabas usando hasta que la bajes.
 
-| Acción                          | Gesto                                                                                                                                  |
-| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Mover el puntero                | Mueve el índice de cualquiera de las manos.                                                                                            |
-| Seleccionar o hacer clic        | Junta el pulgar y el índice hasta que aparezca **Botón pulsado** y suelta.                                                             |
-| Mover una ventana               | Sitúa el puntero en la barra de título, mantén el pellizco de índice y pulgar y desplaza la mano.                                      |
-| Ampliar o reducir con una mano  | Selecciona la ventana. Junta el pulgar y el dedo medio. Sube la mano para ampliar o bájala para reducir.                               |
-| Ampliar o reducir con dos manos | Selecciona la ventana. Junta pulgar e índice en las dos manos al mismo tiempo. Separa las manos para ampliar o acércalas para reducir. |
+| Acción                                 | Gesto                                                                                                                                                                      |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Mover el puntero                       | Mueve el índice de cualquiera de las manos.                                                                                                                                |
+| Seleccionar o hacer clic               | Junta el pulgar y el índice hasta que aparezca **Botón pulsado** y suelta.                                                                                                 |
+| Mover una ventana                      | Sitúa el puntero en la barra de título, mantén el pellizco de índice y pulgar y desplaza la mano.                                                                          |
+| Ampliar o reducir con una mano         | Selecciona la ventana. Junta el pulgar y el dedo medio. Sube la mano para ampliar o bájala para reducir.                                                                   |
+| Mover, ampliar o reducir con dos manos | Selecciona la ventana. Junta pulgar e índice en las dos manos al mismo tiempo. Muévelas juntas para desplazar la ventana. Sepáralas para ampliar o acércalas para reducir. |
 
 Suelta el gesto para terminar. La aplicación cambia el tamaño de la ventana
 activa. Si está maximizada, restaura su tamaño antes de usar el gesto.

@@ -3,6 +3,7 @@ import { GesturePointer, type PointerFrame } from "./pointer";
 
 export type Side = "Left" | "Right";
 export type Hand = { side?: Side; points: Point[] };
+type Center = Pick<Point, "x" | "y">;
 type ResizeMode = "single" | "dual";
 type Resize = {
   mode: ResizeMode;
@@ -10,6 +11,8 @@ type Resize = {
   baseline: number;
   scale: number;
   id: number;
+  center?: Center;
+  offset?: Center;
 };
 
 const press = 0.29;
@@ -63,6 +66,7 @@ export class DesktopGestures {
     const other = hands.find((hand) => hand !== primary);
     let mode: ResizeMode | undefined;
     let measure = 0;
+    let center: Center | undefined;
     if (
       other &&
       pinched(primary, 8, threshold) &&
@@ -71,7 +75,10 @@ export class DesktopGestures {
       const a = primary.points[9];
       const b = other.points[9];
       measure = Math.hypot(a.x - b.x, a.y - b.y);
-      if (measure >= (this.resize ? 0.04 : 0.1)) mode = "dual";
+      if (measure >= (this.resize ? 0.04 : 0.1)) {
+        mode = "dual";
+        center = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      }
     } else if (
       !pinched(primary, 8, release) &&
       pinched(primary, 12, threshold)
@@ -93,10 +100,12 @@ export class DesktopGestures {
       start: time,
       baseline: measure,
       scale: 1,
+      center,
     });
     this.pointer.reset();
     if (time - resize.start < hold) {
       resize.baseline = measure;
+      resize.center = center;
       return { down: false };
     }
     const factor =
@@ -105,6 +114,18 @@ export class DesktopGestures {
         : Math.exp((resize.baseline - measure) * 3.5);
     resize.scale +=
       (Math.max(0.35, Math.min(2.8, factor)) - resize.scale) * 0.3;
-    return { down: false, resize: { id: resize.id, scale: resize.scale } };
+    if (center && resize.center) {
+      const dx = (resize.center.x - center.x) * 1.5;
+      const dy = (center.y - resize.center.y) * 1.5;
+      const offset = resize.offset ?? { x: 0, y: 0 };
+      resize.offset = {
+        x: offset.x + ((Math.abs(dx) > 0.018 ? dx : 0) - offset.x) * 0.3,
+        y: offset.y + ((Math.abs(dy) > 0.018 ? dy : 0) - offset.y) * 0.3,
+      };
+    }
+    return {
+      down: false,
+      resize: { id: resize.id, scale: resize.scale, offset: resize.offset },
+    };
   }
 }

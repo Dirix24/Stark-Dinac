@@ -49,7 +49,7 @@ function disable(reason) {
   }
 }
 
-async function resizeWindow({ id, scale }, generation) {
+async function resizeWindow({ id, scale, offset }, generation) {
   if (resizeTarget?.id !== id) {
     resizeTarget = { id };
     try {
@@ -64,7 +64,20 @@ async function resizeWindow({ id, scale }, generation) {
       const initialWidth = Number(geometry.match(/^WIDTH=(\d+)$/m)?.[1]);
       const initialHeight = Number(geometry.match(/^HEIGHT=(\d+)$/m)?.[1]);
       if (!(initialWidth > 0 && initialHeight > 0)) throw new Error();
-      resizeTarget = { id, target, initialWidth, initialHeight };
+      const initialX = Number(geometry.match(/^X=(-?\d+)$/m)?.[1]);
+      const initialY = Number(geometry.match(/^Y=(-?\d+)$/m)?.[1]);
+      resizeTarget = {
+        id,
+        target,
+        initialWidth,
+        initialHeight,
+        initialX,
+        initialY,
+        width: initialWidth,
+        height: initialHeight,
+        x: initialX,
+        y: initialY,
+      };
     } catch {
       if (enabled && generation === armGeneration) {
         window?.webContents.send(
@@ -88,11 +101,44 @@ async function resizeWindow({ id, scale }, generation) {
   );
   const newWidth = Math.round(initialWidth * adjusted);
   const newHeight = Math.round(initialHeight * adjusted);
-  if (newWidth === resizeTarget.width && newHeight === resizeTarget.height)
-    return;
+  const args = [];
+  if (newWidth !== resizeTarget.width || newHeight !== resizeTarget.height) {
+    args.push("windowsize", target, String(newWidth), String(newHeight));
+  }
+  let newX = resizeTarget.x;
+  let newY = resizeTarget.y;
+  if (
+    offset &&
+    Number.isFinite(resizeTarget.initialX) &&
+    Number.isFinite(resizeTarget.initialY)
+  ) {
+    newX = Math.max(
+      40 - newWidth,
+      Math.min(
+        width - 40,
+        Math.round(resizeTarget.initialX + offset.x * width),
+      ),
+    );
+    newY = Math.max(
+      0,
+      Math.min(
+        height - 40,
+        Math.round(resizeTarget.initialY + offset.y * height),
+      ),
+    );
+    if (newX !== resizeTarget.x || newY !== resizeTarget.y) {
+      args.push("windowmove", target, String(newX), String(newY));
+    }
+  }
+  if (!args.length) return;
   try {
-    await native("windowsize", target, String(newWidth), String(newHeight));
-    Object.assign(resizeTarget, { width: newWidth, height: newHeight });
+    await native(...args);
+    Object.assign(resizeTarget, {
+      width: newWidth,
+      height: newHeight,
+      x: newX,
+      y: newY,
+    });
   } catch {
     resizeTarget = { id };
     if (enabled && generation === armGeneration) {
@@ -194,7 +240,20 @@ ipcMain.on("desktop:pointer", (event, frame) => {
     resize.scale >= 0.35 &&
     resize.scale <= 2.8
   ) {
-    pending = { down: false, resize: { id: resize.id, scale: resize.scale } };
+    const offset = resize.offset;
+    const validOffset =
+      offset &&
+      [offset.x, offset.y].every(
+        (value) => Number.isFinite(value) && Math.abs(value) <= 1.5,
+      );
+    pending = {
+      down: false,
+      resize: {
+        id: resize.id,
+        scale: resize.scale,
+        offset: validOffset ? { x: offset.x, y: offset.y } : undefined,
+      },
+    };
     void flush();
     return;
   }

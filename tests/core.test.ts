@@ -214,7 +214,7 @@ test("either hand can resize with the middle-finger pinch", () => {
   }
 });
 
-test("two hands resize in both directions without clicking when one hand releases", () => {
+test("two hands move and resize in both directions without clicking when one hand releases", () => {
   const gestures = new DesktopGestures();
   const at = (left: number, right: number) => [
     trackedHand("Left", left, 0.5, "index"),
@@ -222,6 +222,9 @@ test("two hands resize in both directions without clicking when one hand release
   ];
   assert.deepEqual(gestures.update(at(0.3, 0.6), 0), { down: false });
   assert.equal(gestures.update(at(0.3, 0.6).reverse(), 130).resize?.scale, 1);
+  const translated = gestures.update(at(0.37, 0.67), 145);
+  assert.ok(translated.resize?.offset && translated.resize.offset.x < 0);
+  assert.ok(Math.abs((translated.resize?.scale ?? 0) - 1) < 1e-9);
   const larger = gestures.update(at(0.24, 0.67), 160);
   const smaller = gestures.update(at(0.37, 0.53), 190);
   assert.ok(larger.resize && larger.resize.scale > 1);

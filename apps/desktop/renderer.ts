@@ -167,7 +167,9 @@ function trackFrame(time: number) {
       const frame = gestures.update(hands, time);
       desktop.pointer(frame);
       const status = frame.resize
-        ? "Control activo · Cambiando tamaño"
+        ? frame.resize.offset
+          ? "Control activo · Ventana con dos manos"
+          : "Control activo · Cambiando tamaño"
         : frame.down
           ? "Control activo · Botón pulsado"
           : frame.x === undefined
