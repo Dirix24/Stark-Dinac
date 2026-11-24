@@ -1,9 +1,12 @@
 import { distance, palmSize, type Point } from "../../packages/gesture-engine";
 
+import type { ScrollDirection } from "./scroll";
+
 export type PointerFrame = {
   x?: number;
   y?: number;
   down: boolean;
+  scroll?: ScrollDirection;
   resize?: { id: number; scale: number; offset?: Position };
 };
 type Position = { x: number; y: number };

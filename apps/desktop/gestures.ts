@@ -1,5 +1,6 @@
 import { distance, palmSize, type Point } from "../../packages/gesture-engine";
 import { GesturePointer, type PointerFrame } from "./pointer";
+import { scrollDirection, type ScrollDirection } from "./scroll";
 
 export type Side = "Left" | "Right";
 export type Hand = { side?: Side; points: Point[] };
@@ -32,9 +33,10 @@ export class DesktopGestures {
   private resize?: Resize;
   private resizeId = 0;
   private waitForRelease = false;
+  private scroll?: { direction: ScrollDirection; start: number };
 
   reset() {
-    this.resize = this.primary = undefined;
+    this.resize = this.primary = this.scroll = undefined;
     this.waitForRelease = false;
     return this.pointer.reset();
   }
@@ -92,7 +94,20 @@ export class DesktopGestures {
       this.waitForRelease = true;
       return this.pointer.reset();
     }
-    if (!mode) return this.pointer.update(primary.points, time);
+    if (!mode) {
+      const direction = scrollDirection(primary.points);
+      if (direction) {
+        if (this.scroll?.direction !== direction)
+          this.scroll = { direction, start: time };
+        this.pointer.reset();
+        return time - this.scroll.start >= 170
+          ? { down: false, scroll: direction }
+          : { down: false };
+      }
+      this.scroll = undefined;
+      return this.pointer.update(primary.points, time);
+    }
+    this.scroll = undefined;
 
     const resize = (this.resize ??= {
       id: ++this.resizeId,

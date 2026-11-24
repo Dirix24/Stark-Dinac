@@ -34,6 +34,14 @@ let armGeneration = 0;
 let width;
 let height;
 let resizeTarget;
+let lastScrollAt = -Infinity;
+let lastScroll;
+const wheelButtons = new Map([
+  ["up", "4"],
+  ["down", "5"],
+  ["left", "6"],
+  ["right", "7"],
+]);
 
 function native(...args) {
   return execute("xdotool", args, { timeout: 1000 });
@@ -153,7 +161,7 @@ async function resizeWindow({ id, scale, offset }, generation) {
 async function flush() {
   if (busy || !pending) return;
   busy = true;
-  const { x, y, down, resize } = pending;
+  const { x, y, down, resize, scroll } = pending;
   const generation = armGeneration;
   pending = undefined;
   try {
@@ -161,6 +169,14 @@ async function flush() {
     if (!down && pressed) args.push("mouseup", "1");
     if (x !== undefined) args.push("mousemove", x, y);
     if (down && !pressed) args.push("mousedown", "1");
+    if (scroll && enabled && generation === armGeneration) {
+      const now = Date.now();
+      if (scroll !== lastScroll || now - lastScrollAt >= 135) {
+        args.push("click", wheelButtons.get(scroll));
+        lastScrollAt = now;
+      }
+    }
+    lastScroll = scroll;
     if (args.length) await native(...args);
     pressed = down;
     if (resize && enabled && generation === armGeneration) {
@@ -231,7 +247,12 @@ ipcMain.on("desktop:pointer", (event, frame) => {
   if (!enabled || !trusted(event) || !frame || typeof frame.down !== "boolean")
     return;
   heartbeat = Date.now();
-  const { x, y, down, resize } = frame;
+  const { x, y, down, resize, scroll } = frame;
+  if (wheelButtons.has(scroll)) {
+    pending = { down: false, scroll };
+    void flush();
+    return;
+  }
   if (
     resize &&
     Number.isSafeInteger(resize.id) &&

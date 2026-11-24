@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DesktopGestures, type Side } from "../apps/desktop/gestures";
 import { GesturePointer } from "../apps/desktop/pointer";
+import { scrollDirection } from "../apps/desktop/scroll";
 import { Camera, cameraError } from "../packages/camera-engine";
 import { classify, GestureGate, type Point } from "../packages/gesture-engine";
 import { VideoEngine } from "../packages/video-engine";
@@ -246,6 +247,55 @@ test("with both hands visible the pointer sticks to the current hand", () => {
   assert.deepEqual(gestures.update([right], 66), { down: false });
   gestures.update([right], 99);
   assert.ok(gestures.update([right], 132).x !== first.x);
+});
+
+function scrollHand(x: number, y: number, side: Side = "Right") {
+  const hand = trackedHand(side, 0.5, 0.5);
+  const reach = Math.hypot(x, y);
+  hand.points[4].x = 0.5 - (y * 0.14) / reach;
+  hand.points[4].y = 0.5 + (x * 0.14) / reach;
+  for (const base of [5, 9]) {
+    for (let joint = 1; joint <= 3; joint++) {
+      hand.points[base + joint].x += (x * joint) / 3;
+      hand.points[base + joint].y += (y * joint) / 3;
+    }
+  }
+  return hand;
+}
+
+test("scroll recognizes both fingers pointing together in four directions", () => {
+  assert.equal(scrollDirection(scrollHand(0, -0.18).points), "up");
+  assert.equal(scrollDirection(scrollHand(0, 0.18).points), "down");
+  assert.equal(scrollDirection(scrollHand(0.18, 0).points), "left");
+  assert.equal(scrollDirection(scrollHand(-0.18, 0).points), "right");
+
+  const hand = scrollHand(0, -0.18);
+  hand.points[12].y = 0.68;
+  assert.equal(scrollDirection(hand.points), undefined);
+  const threeFingers = scrollHand(0, -0.18);
+  for (let joint = 1; joint <= 3; joint++) {
+    threeFingers.points[13 + joint].y -= joint * 0.06;
+  }
+  assert.equal(scrollDirection(threeFingers.points), undefined);
+});
+
+test("scroll starts after a hold with either hand, freezes the pointer and stops on release", () => {
+  for (const side of ["Left", "Right"] as const) {
+    const gestures = new DesktopGestures();
+    const up = scrollHand(0, -0.18, side);
+    const down = scrollHand(0, 0.18, side);
+    assert.deepEqual(gestures.update([up], 0), { down: false });
+    assert.deepEqual(gestures.update([up], 169), { down: false });
+    assert.deepEqual(gestures.update([up], 170), { down: false, scroll: "up" });
+    assert.deepEqual(gestures.update([up], 310), { down: false, scroll: "up" });
+    assert.deepEqual(gestures.update([down], 350), { down: false });
+    assert.deepEqual(gestures.update([down], 520), {
+      down: false,
+      scroll: "down",
+    });
+    assert.deepEqual(gestures.update([], 550), { down: false });
+    assert.deepEqual(gestures.update([down], 570), { down: false });
+  }
 });
 
 function landmarks(pose: "palm" | "pinch" | "fist"): Point[] {

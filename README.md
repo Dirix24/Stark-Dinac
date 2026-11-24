@@ -23,13 +23,17 @@ pulsa **Activar control**. La vista marca la mano **izquierda en azul** y la
 **derecha en verde**. Cuando hay dos manos visibles, el puntero sigue la que
 ya estabas usando hasta que la bajes.
 
-| Acción                                 | Gesto                                                                                                                                                                      |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Mover el puntero                       | Mueve el índice de cualquiera de las manos.                                                                                                                                |
-| Seleccionar o hacer clic               | Junta el pulgar y el índice hasta que aparezca **Botón pulsado** y suelta.                                                                                                 |
-| Mover una ventana                      | Sitúa el puntero en la barra de título, mantén el pellizco de índice y pulgar y desplaza la mano.                                                                          |
-| Ampliar o reducir con una mano         | Selecciona la ventana. Junta el pulgar y el dedo medio. Sube la mano para ampliar o bájala para reducir.                                                                   |
-| Mover, ampliar o reducir con dos manos | Selecciona la ventana. Junta pulgar e índice en las dos manos al mismo tiempo. Muévelas juntas para desplazar la ventana. Sepáralas para ampliar o acércalas para reducir. |
+| Acción                                 | Gesto                                                                                                                                                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Mover el puntero                       | Mueve el índice de cualquiera de las manos.                                                                                                                                                                  |
+| Seleccionar o hacer clic               | Junta el pulgar y el índice hasta que aparezca **Botón pulsado** y suelta.                                                                                                                                   |
+| Scroll vertical u horizontal           | Coloca el puntero sobre el contenido. Extiende solo el índice y el dedo medio y apunta arriba, abajo, a la izquierda o a la derecha. Mantén el gesto para repetir el scroll y baja los dedos para detenerlo. |
+| Mover una ventana                      | Sitúa el puntero en la barra de título, mantén el pellizco de índice y pulgar y desplaza la mano.                                                                                                            |
+| Ampliar o reducir con una mano         | Selecciona la ventana. Junta el pulgar y el dedo medio. Sube la mano para ampliar o bájala para reducir.                                                                                                     |
+| Mover, ampliar o reducir con dos manos | Selecciona la ventana. Junta pulgar e índice en las dos manos al mismo tiempo. Muévelas juntas para desplazar la ventana. Sepáralas para ampliar o acércalas para reducir.                                   |
+
+El puntero conserva su posición durante el gesto de scroll. El desplazamiento
+horizontal funciona en aplicaciones y paneles que aceptan rueda horizontal.
 
 Suelta el gesto para terminar. La aplicación cambia el tamaño de la ventana
 activa. Si está maximizada, restaura su tamaño antes de usar el gesto.
@@ -42,7 +46,7 @@ instalar un paquete en MX Linux x86_64, ejecuta:
 
 ```sh
 npm run package:linux
-sudo apt install ./stark-dinac_0.2.0_amd64.deb
+sudo apt install ./stark-dinac_0.3.0_amd64.deb
 ```
 
 ## Instalación y ejecución de la versión web

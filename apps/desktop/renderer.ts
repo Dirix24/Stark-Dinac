@@ -43,6 +43,12 @@ let animation = 0;
 let lastTime = -Infinity;
 let lastVideo = -1;
 const gestures = new DesktopGestures();
+const scrollLabels = {
+  up: "hacia arriba",
+  down: "hacia abajo",
+  left: "hacia la izquierda",
+  right: "hacia la derecha",
+};
 const left = element("left-hand");
 const right = element("right-hand");
 
@@ -166,15 +172,17 @@ function trackFrame(time: number) {
       );
       const frame = gestures.update(hands, time);
       desktop.pointer(frame);
-      const status = frame.resize
-        ? frame.resize.offset
-          ? "Control activo · Ventana con dos manos"
-          : "Control activo · Cambiando tamaño"
-        : frame.down
-          ? "Control activo · Botón pulsado"
-          : frame.x === undefined
-            ? "Control activo · Muestra una o dos manos"
-            : "Control activo";
+      const status = frame.scroll
+        ? "Control activo · Scroll " + scrollLabels[frame.scroll]
+        : frame.resize
+          ? frame.resize.offset
+            ? "Control activo · Ventana con dos manos"
+            : "Control activo · Cambiando tamaño"
+          : frame.down
+            ? "Control activo · Botón pulsado"
+            : frame.x === undefined
+              ? "Control activo · Muestra una o dos manos"
+              : "Control activo";
       if (state.textContent !== status) state.textContent = status;
     } catch {
       pauseControl("Se interrumpió el seguimiento de la mano.");
