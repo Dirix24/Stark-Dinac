@@ -8,14 +8,50 @@ reproductor de vídeo y editor 3D.
 
 ## Aplicación de escritorio para Linux X11
 
-En MX Linux con Xfce y X11 puedes instalar el paquete Debian para 64 bits
-y abrir **Stark Dinac** desde el menú. Para ejecutarlo desde el repositorio,
-instala Node.js 22 y ejecuta:
+### Instalar el paquete .deb
+
+En MX Linux de 64 bits con Xfce y X11, si ya tienes el archivo
+`stark-dinac_0.5.0_amd64.deb`, abre una terminal **en la carpeta que contiene
+ese archivo** y ejecuta:
+
+```sh
+sudo apt install ./stark-dinac_0.5.0_amd64.deb
+```
+
+También puedes pasarle a `apt` la ruta absoluta del archivo entre comillas
+si estás en otra carpeta. Una vez instalado, abre **Stark Dinac** desde el
+menú de aplicaciones o ejecuta `stark-dinac`.
+
+### Descargar el código y crear el instalador
+
+Necesitas Git, Node.js 22 y npm. Ejecuta estos comandos en orden:
+
+```sh
+git clone https://github.com/Dirix24/Stark-Dinac.git &&
+cd Stark-Dinac &&
+npm ci &&
+npm run package:linux &&
+sudo apt install ./stark-dinac_0.5.0_amd64.deb
+```
+
+`cd Stark-Dinac` entra en la carpeta que contiene `package.json` y
+`package-lock.json`. Si ya clonaste el repositorio, entra en esa carpeta
+y empieza con `npm ci`.
+
+Para ejecutar el programa desde el código descargado sin instalar el
+paquete, ejecuta estos comandos dentro de `Stark-Dinac` después de `npm ci`:
 
 ```sh
 sudo apt install xdotool python3 libxtst6
-npm ci
 npm run desktop
+```
+
+### Desinstalar
+
+Si instalaste el paquete `.deb`, cierra Stark Dinac y ejecuta:
+
+```sh
+sudo apt remove stark-dinac
 ```
 
 ### Instrucciones de uso
@@ -67,13 +103,7 @@ una confirmación breve para evitar clics involuntarios.
 
 El seguimiento se ejecuta localmente y requiere conexión para descargar el
 modelo de MediaPipe al activar la cámara. El control nativo requiere Linux
-X11. La versión web está disponible para los demás entornos. Para generar e
-instalar un paquete en MX Linux x86_64, ejecuta:
-
-```sh
-npm run package:linux
-sudo apt install ./stark-dinac_0.5.0_amd64.deb
-```
+X11. La versión web está disponible para los demás entornos.
 
 ## Instalación y ejecución de la versión web
 
