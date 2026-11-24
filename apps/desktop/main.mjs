@@ -11,6 +11,7 @@ import { execFile } from "node:child_process";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { openInput } from "./x11-input.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const execute = promisify(execFile);
@@ -27,6 +28,14 @@ const shortcut = "CommandOrControl+Shift+F8";
 let window;
 let enabled = false;
 let pressed = false;
+let modifier;
+let input;
+let inputLoading;
+let pendingAction;
+const clickActions = new Map([
+  ["context", [3, 1]],
+  ["double", [1, 2]],
+]);
 let busy = false;
 let pending;
 let heartbeat;
@@ -51,6 +60,7 @@ function disable(reason) {
   armGeneration++;
   enabled = false;
   pending = { down: false };
+  pendingAction = undefined;
   void flush();
   if (reason && window && !window.isDestroyed()) {
     window.webContents.send("desktop:paused", reason);
@@ -161,23 +171,36 @@ async function resizeWindow({ id, scale, offset }, generation) {
 async function flush() {
   if (busy || !pending) return;
   busy = true;
-  const { x, y, down, resize, scroll } = pending;
+  const { x, y, down, resize, scroll, selection } = pending;
+  const action = pendingAction;
+  pendingAction = undefined;
   const generation = armGeneration;
   pending = undefined;
   try {
-    const args = [];
-    if (!down && pressed) args.push("mouseup", "1");
-    if (x !== undefined) args.push("mousemove", x, y);
-    if (down && !pressed) args.push("mousedown", "1");
+    const events = [];
+    if (!down && pressed) {
+      events.push(["button", 1, false]);
+      if (modifier) events.push(["key", modifier, false]);
+      modifier = undefined;
+    }
+    if (x !== undefined) events.push(["move", x, y]);
+    if (down && !pressed) {
+      modifier = selection;
+      if (modifier) events.push(["key", modifier, true]);
+      events.push(["button", 1, true]);
+    }
+    if (action && enabled && generation === armGeneration) {
+      events.push(["click", ...clickActions.get(action)]);
+    }
     if (scroll && enabled && generation === armGeneration) {
-      const now = Date.now();
+      const now = performance.now();
       if (scroll !== lastScroll || now - lastScrollAt >= 135) {
-        args.push("click", wheelButtons.get(scroll));
+        events.push(["click", Number(wheelButtons.get(scroll)), 1]);
         lastScrollAt = now;
       }
     }
     lastScroll = scroll;
-    if (args.length) await native(...args);
+    if (events.length) await input.send(events);
     pressed = down;
     if (resize && enabled && generation === armGeneration) {
       await resizeWindow(resize, generation);
@@ -185,15 +208,11 @@ async function flush() {
       resizeTarget = undefined;
     }
   } catch {
-    // Release even if xdotool failed after it had already sent a button event.
-    enabled = false;
-    pending = undefined;
-    try {
-      await native("mouseup", "1");
-    } catch {
-      // The display can already be gone during shutdown.
-    }
+    // Ending the helper's input releases any synthetic buttons and modifiers.
+    input?.close();
+    input = undefined;
     pressed = false;
+    modifier = undefined;
     disable("El escritorio dejó de aceptar el control del puntero.");
   } finally {
     busy = false;
@@ -232,6 +251,18 @@ ipcMain.handle("desktop:arm", async (event) => {
       ? "Instala xdotool para controlar el puntero (sudo apt install xdotool)."
       : "No se pudo conectar con el escritorio X11.";
   }
+  try {
+    if (!input) {
+      inputLoading ??= openInput(path.join(__dirname, "x11-input.py")).finally(
+        () => {
+          inputLoading = undefined;
+        },
+      );
+      input = await inputLoading;
+    }
+  } catch {
+    return "No se pudo iniciar XTest. Comprueba que estén instalados python3 y libxtst6.";
+  }
   if (generation !== armGeneration || !trusted(event))
     return "La activación se canceló.";
   heartbeat = Date.now();
@@ -247,7 +278,8 @@ ipcMain.on("desktop:pointer", (event, frame) => {
   if (!enabled || !trusted(event) || !frame || typeof frame.down !== "boolean")
     return;
   heartbeat = Date.now();
-  const { x, y, down, resize, scroll } = frame;
+  const { x, y, down, resize, scroll, action, selection } = frame;
+  if (clickActions.has(action)) pendingAction = action;
   if (wheelButtons.has(scroll)) {
     pending = { down: false, scroll };
     void flush();
@@ -283,9 +315,11 @@ ipcMain.on("desktop:pointer", (event, frame) => {
   );
   pending = position
     ? {
-        x: String(Math.round(x * (width - 1))),
-        y: String(Math.round(y * (height - 1))),
+        x: Math.round(x * (width - 1)),
+        y: Math.round(y * (height - 1)),
         down,
+        selection:
+          selection === "ctrl" || selection === "shift" ? selection : undefined,
       }
     : { down: false };
   void flush();
@@ -374,5 +408,7 @@ app.on("will-quit", (event) => {
       clearInterval(wait);
       app.quit();
     }, 30);
+  } else {
+    input?.close();
   }
 });

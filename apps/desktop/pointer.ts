@@ -7,6 +7,8 @@ export type PointerFrame = {
   y?: number;
   down: boolean;
   scroll?: ScrollDirection;
+  action?: "double" | "context";
+  selection?: "ctrl" | "shift";
   resize?: { id: number; scale: number; offset?: Position };
 };
 type Position = { x: number; y: number };
@@ -26,31 +28,34 @@ export class GesturePointer {
   private position?: Position;
   private pinch?: { time: number; origin: Position; palm: Position };
   private down = false;
+  private fist = false;
 
   reset(): PointerFrame {
     this.position = undefined;
     this.pinch = undefined;
-    this.down = false;
+    this.down = this.fist = false;
     return { down: false };
   }
 
-  update(hand: Point[] | undefined, time: number): PointerFrame {
+  update(hand: Point[] | undefined, time: number, grip = false): PointerFrame {
     const size = hand ? palmSize(hand) : 0;
     if (!hand || size < 0.025) return this.reset();
     const fingertip = screenPosition(hand[8]);
     const ratio = distance(hand[4], hand[8]) / size;
-    if (ratio >= 0.42 || (!this.down && ratio > 0.29)) {
+    const holding = grip || (!this.fist && ratio <= (this.down ? 0.42 : 0.29));
+    if (!holding) {
       const released = this.down;
       this.pinch = undefined;
-      this.down = false;
+      this.down = this.fist = false;
       if (!released) this.move(fingertip);
     } else {
       const palm = screenPosition(hand[9]);
       this.pinch ??= { time, origin: this.position ?? fingertip, palm };
       const { time: started, origin, palm: initialPalm } = this.pinch;
-      if (!this.down && time - started >= 105) {
+      if (!this.down && time - started >= (grip ? 150 : 70)) {
         // Keep the cursor where the pinch began. Movement after this frame drags it.
         this.down = true;
+        this.fist = grip;
         this.pinch.palm = palm;
       } else if (this.down) {
         this.move({
@@ -65,11 +70,16 @@ export class GesturePointer {
   }
 
   private move(target: Position) {
-    this.position = this.position
-      ? {
-          x: this.position.x + (target.x - this.position.x) * 0.32,
-          y: this.position.y + (target.y - this.position.y) * 0.32,
-        }
-      : target;
+    if (!this.position) {
+      this.position = target;
+      return;
+    }
+    const dx = target.x - this.position.x;
+    const dy = target.y - this.position.y;
+    const weight = Math.min(0.9, 0.34 + Math.hypot(dx, dy) * 9);
+    this.position = {
+      x: this.position.x + dx * weight,
+      y: this.position.y + dy * weight,
+    };
   }
 }

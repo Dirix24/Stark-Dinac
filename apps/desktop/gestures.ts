@@ -1,4 +1,9 @@
-import { distance, palmSize, type Point } from "../../packages/gesture-engine";
+import {
+  classify,
+  distance,
+  palmSize,
+  type Point,
+} from "../../packages/gesture-engine";
 import { GesturePointer, type PointerFrame } from "./pointer";
 import { scrollDirection, type ScrollDirection } from "./scroll";
 
@@ -20,11 +25,20 @@ const press = 0.29;
 const release = 0.42;
 const hold = 130;
 
-function pinched(hand: Hand, finger: 8 | 12, threshold: number) {
+function pinched(hand: Hand, finger: 8 | 12 | 16 | 20, threshold: number) {
   return (
     distance(hand.points[4], hand.points[finger]) <
     palmSize(hand.points) * threshold
   );
+}
+
+function shortcut(hand: Hand): PointerFrame["action"] {
+  if (pinched(hand, 8, release) || pinched(hand, 12, release)) return;
+  const ring = distance(hand.points[4], hand.points[16]);
+  const pinky = distance(hand.points[4], hand.points[20]);
+  if (Math.min(ring, pinky) < palmSize(hand.points) * 0.25) {
+    return ring <= pinky ? "context" : "double";
+  }
 }
 
 export class DesktopGestures {
@@ -34,10 +48,16 @@ export class DesktopGestures {
   private resizeId = 0;
   private waitForRelease = false;
   private scroll?: { direction: ScrollDirection; start: number };
+  private click?: {
+    action: NonNullable<PointerFrame["action"]>;
+    start: number;
+  };
+  private clickFired = false;
 
   reset() {
     this.resize = this.primary = this.scroll = undefined;
-    this.waitForRelease = false;
+    this.waitForRelease = this.clickFired = false;
+    this.click = undefined;
     return this.pointer.reset();
   }
 
@@ -95,6 +115,21 @@ export class DesktopGestures {
       return this.pointer.reset();
     }
     if (!mode) {
+      const action = shortcut(primary);
+      if (action || this.clickFired) {
+        this.scroll = undefined;
+        if (!action) {
+          this.click = undefined;
+          this.clickFired = false;
+        } else if (!this.clickFired) {
+          if (this.click?.action !== action)
+            this.click = { action, start: time };
+          this.clickFired = time - this.click.start >= 80;
+          if (this.clickFired) return { ...this.pointer.reset(), action };
+        }
+        return this.pointer.reset();
+      }
+      this.click = undefined;
       const direction = scrollDirection(primary.points);
       if (direction) {
         if (this.scroll?.direction !== direction)
@@ -105,9 +140,17 @@ export class DesktopGestures {
           : { down: false };
       }
       this.scroll = undefined;
-      return this.pointer.update(primary.points, time);
+      const grip = classify(primary.points) === "fist";
+      const frame = this.pointer.update(primary.points, time, grip);
+      if (frame.down && !grip && other) {
+        const selected = shortcut(other);
+        if (selected)
+          frame.selection = selected === "context" ? "ctrl" : "shift";
+      }
+      return frame;
     }
-    this.scroll = undefined;
+    this.scroll = this.click = undefined;
+    this.clickFired = false;
 
     const resize = (this.resize ??= {
       id: ++this.resizeId,

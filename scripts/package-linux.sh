@@ -18,6 +18,7 @@ install -d "$root/DEBIAN" "$app/resources/app/apps/desktop" \
 cp -a node_modules/electron/dist/. "$app/"
 rm -f "$app/resources/default_app.asar"
 install -m 0644 apps/desktop/main.mjs apps/desktop/preload.cjs apps/desktop/logo.png \
+  apps/desktop/x11-input.mjs apps/desktop/x11-input.py \
   "$app/resources/app/apps/desktop/"
 cp -a dist-desktop "$app/resources/app/"
 printf '{"name":"stark-dinac","version":"%s","main":"apps/desktop/main.mjs"}\n' "$version" \
@@ -47,7 +48,7 @@ Version: $version
 Section: utils
 Priority: optional
 Architecture: amd64
-Depends: xdotool, libgtk-3-0t64 | libgtk-3-0, libasound2t64 | libasound2, libnss3, libgbm1, libxss1, libx11-xcb1, libxkbcommon0, libxcomposite1, libxdamage1, libxfixes3, libxrandr2, libatk-bridge2.0-0t64 | libatk-bridge2.0-0, libcups2t64 | libcups2, libdrm2, libxcb1
+Depends: xdotool, python3, libxtst6, libgtk-3-0t64 | libgtk-3-0, libasound2t64 | libasound2, libnss3, libgbm1, libxss1, libx11-xcb1, libxkbcommon0, libxcomposite1, libxdamage1, libxfixes3, libxrandr2, libatk-bridge2.0-0t64 | libatk-bridge2.0-0, libcups2t64 | libcups2, libdrm2, libxcb1
 Maintainer: Stark Dinac contributors
 Description: Control gestual del escritorio X11 mediante una cámara
  Mueve el puntero, haz clic y arrastra ventanas con una mano.

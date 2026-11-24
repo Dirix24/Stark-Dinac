@@ -141,7 +141,7 @@ async function openCamera(deviceId: string) {
 function trackFrame(time: number) {
   if (!controlling || !tracker) return;
   if (
-    time - lastTime >= 32 &&
+    time - lastTime >= 22 &&
     video.readyState >= 2 &&
     video.currentTime !== lastVideo
   ) {
@@ -172,17 +172,25 @@ function trackFrame(time: number) {
       );
       const frame = gestures.update(hands, time);
       desktop.pointer(frame);
-      const status = frame.scroll
-        ? "Control activo · Scroll " + scrollLabels[frame.scroll]
-        : frame.resize
-          ? frame.resize.offset
-            ? "Control activo · Ventana con dos manos"
-            : "Control activo · Cambiando tamaño"
-          : frame.down
-            ? "Control activo · Botón pulsado"
-            : frame.x === undefined
-              ? "Control activo · Muestra una o dos manos"
-              : "Control activo";
+      const status = frame.action
+        ? frame.action === "double"
+          ? "Control activo · Doble clic"
+          : "Control activo · Clic derecho"
+        : frame.selection
+          ? frame.selection === "ctrl"
+            ? "Control activo · Selección múltiple"
+            : "Control activo · Selección de intervalo"
+          : frame.scroll
+            ? "Control activo · Scroll " + scrollLabels[frame.scroll]
+            : frame.resize
+              ? frame.resize.offset
+                ? "Control activo · Ventana con dos manos"
+                : "Control activo · Cambiando tamaño"
+              : frame.down
+                ? "Control activo · Botón pulsado"
+                : frame.x === undefined
+                  ? "Control activo · Muestra una o dos manos"
+                  : "Control activo";
       if (state.textContent !== status) state.textContent = status;
     } catch {
       pauseControl("Se interrumpió el seguimiento de la mano.");

@@ -171,8 +171,8 @@ test("desktop pointer holds still for a click and drags while the pinch is held"
 
   hand[8].x = 0.62;
   assert.deepEqual(pointer.update(hand, 30), initial);
-  assert.deepEqual(pointer.update(hand, 134), initial);
-  assert.deepEqual(pointer.update(hand, 135), { ...initial, down: true });
+  assert.deepEqual(pointer.update(hand, 99), initial);
+  assert.deepEqual(pointer.update(hand, 100), { ...initial, down: true });
 
   hand[9].x = 0.35;
   const dragged = pointer.update(hand, 170);
@@ -247,6 +247,62 @@ test("with both hands visible the pointer sticks to the current hand", () => {
   assert.deepEqual(gestures.update([right], 66), { down: false });
   gestures.update([right], 99);
   assert.ok(gestures.update([right], 132).x !== first.x);
+});
+
+test("context and double-click each fire once until the gesture is released", () => {
+  for (const [finger, action] of [
+    [16, "context"],
+    [20, "double"],
+  ] as const) {
+    const gestures = new DesktopGestures();
+    const hand = trackedHand("Right", 0.4, 0.5);
+    hand.points[finger].x += 0.14;
+    assert.deepEqual(gestures.update([hand], 0), { down: false });
+    assert.deepEqual(gestures.update([hand], 79), { down: false });
+    assert.deepEqual(gestures.update([hand], 80), { down: false, action });
+    assert.deepEqual(gestures.update([hand], 200), { down: false });
+    gestures.update([trackedHand("Right", 0.4, 0.5)], 220);
+    gestures.update([hand], 300);
+    assert.deepEqual(gestures.update([hand], 390), { down: false, action });
+  }
+});
+
+test("the other hand can modify a selection click and the fist can grip and release", () => {
+  for (const [finger, selection] of [
+    [16, "ctrl"],
+    [20, "shift"],
+  ] as const) {
+    const gestures = new DesktopGestures();
+    const primary = trackedHand("Left", 0.4, 0.5, "index");
+    const secondary = trackedHand("Right", 0.65, 0.5);
+    secondary.points[finger].x += 0.14;
+    gestures.update([primary, secondary], 0);
+    const pressed = gestures.update([secondary, primary], 75);
+    assert.equal(pressed.down, true);
+    assert.equal(pressed.selection, selection);
+    assert.equal(
+      gestures.update([trackedHand("Left", 0.4, 0.5), secondary], 100).down,
+      false,
+    );
+  }
+
+  const gestures = new DesktopGestures();
+  const fist = trackedHand("Right", 0.4, 0.5);
+  fist.points[4].x = 0.44;
+  gestures.update([trackedHand("Right", 0.4, 0.5)], 0);
+  assert.equal(gestures.update([fist], 25).down, false);
+  assert.equal(gestures.update([fist], 174).down, false);
+  const gripped = gestures.update([fist], 175);
+  fist.points[9].x -= 0.1;
+  const dragged = gestures.update([fist], 205);
+  assert.equal(gripped.down && dragged.down, true);
+  assert.ok(
+    dragged.x !== undefined && gripped.x !== undefined && dragged.x > gripped.x,
+  );
+  assert.equal(
+    gestures.update([trackedHand("Right", 0.4, 0.5)], 240).down,
+    false,
+  );
 });
 
 function scrollHand(x: number, y: number, side: Side = "Right") {
