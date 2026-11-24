@@ -42,9 +42,15 @@ export class Camera {
   }
 
   async devices() {
-    return (await this.media.enumerateDevices()).filter(
-      (device) => device.kind === "videoinput",
-    );
+    if (!this.media?.enumerateDevices) return [];
+    const devices = await this.media.enumerateDevices();
+    const seen = new Set<string>();
+    return devices.filter(({ deviceId, kind }) => {
+      if (kind !== "videoinput" || !deviceId || seen.has(deviceId))
+        return false;
+      seen.add(deviceId);
+      return true;
+    });
   }
 
   async start(deviceId?: string): Promise<boolean> {

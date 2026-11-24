@@ -6,12 +6,12 @@ const wasm =
 const model =
   "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
-export async function createTracker() {
-  const files = await FilesetResolver.forVisionTasks(wasm);
+export async function createTracker({ numHands = 2, wasmRoot = wasm } = {}) {
+  const files = await FilesetResolver.forVisionTasks(wasmRoot);
   return HandLandmarker.createFromOptions(files, {
     baseOptions: { modelAssetPath: model, delegate: "CPU" },
     runningMode: "VIDEO",
-    numHands: 2,
+    numHands,
     minHandDetectionConfidence: 0.6,
     minHandPresenceConfidence: 0.6,
     minTrackingConfidence: 0.6,
@@ -21,14 +21,16 @@ export async function createTracker() {
 export function drawHands(
   canvas: HTMLCanvasElement,
   result?: HandLandmarkerResult,
+  color?: (side: string | undefined) => string | undefined,
 ) {
   const context = canvas.getContext("2d");
   if (!context) return;
   const { width, height } = canvas;
   context.clearRect(0, 0, width, height);
-  for (const points of result?.landmarks ?? []) {
-    context.strokeStyle = "#47f4ff";
-    context.fillStyle = "#c3fbff";
+  for (const [index, points] of (result?.landmarks ?? []).entries()) {
+    const tint = color?.(result?.handedness[index]?.[0]?.categoryName);
+    context.strokeStyle = tint ?? "#47f4ff";
+    context.fillStyle = tint ?? "#c3fbff";
     context.lineWidth = 2;
     for (const { start, end } of HandLandmarker.HAND_CONNECTIONS) {
       context.beginPath();

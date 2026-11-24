@@ -35,6 +35,8 @@ let tracker: HandLandmarker | undefined;
 let loading: Promise<HandLandmarker> | undefined;
 let generation = 0;
 let cameraRequest = 0;
+let deviceListRequest = 0;
+let preferredDevice = "";
 let starting = false;
 let visible = true;
 let active = false;
@@ -75,7 +77,7 @@ function updateStatus() {
   button("gestures").disabled = !live;
   button("gestures").textContent = active ? "Pausar gestos" : "Activar gestos";
   button("calibrate").disabled = !active || !currentHand;
-  select("devices").disabled = !live || select("devices").options.length < 2;
+  select("devices").disabled = starting || select("devices").options.length < 3;
 }
 
 function resetGesture() {
@@ -104,42 +106,54 @@ function stopCamera(message = "Cámara detenida.") {
   camera.stop();
   pauseGestures();
   report(message);
+  void listDevices();
 }
 
 async function listDevices() {
-  const devices = await camera.devices();
-  const selected = camera.deviceId;
-  select("devices").replaceChildren(
-    ...devices.map(
-      (device, index) =>
-        new Option(
-          device.label || "Cámara " + (index + 1),
-          device.deviceId,
-          false,
-          device.deviceId === selected,
-        ),
-    ),
-  );
-  updateStatus();
+  const request = ++deviceListRequest;
+  try {
+    const devices = await camera.devices();
+    if (request !== deviceListRequest) return;
+    if (!devices.some((device) => device.deviceId === preferredDevice)) {
+      preferredDevice = "";
+    }
+    const picker = select("devices");
+    picker.replaceChildren(
+      new Option("Automática", ""),
+      ...devices.map(
+        (device, index) =>
+          new Option(device.label || "Cámara " + (index + 1), device.deviceId),
+      ),
+    );
+    picker.value = camera.deviceId || preferredDevice;
+    if (picker.selectedIndex < 0) picker.value = "";
+    updateStatus();
+  } catch {
+    if (request === deviceListRequest && camera.active) {
+      report("No se pudo actualizar la lista de cámaras.");
+    }
+  }
 }
 
-async function startCamera(deviceId?: string) {
+async function startCamera() {
   const request = ++cameraRequest;
+  deviceListRequest++;
   const resume = active;
   pauseGestures();
   starting = true;
-  const pending = camera.start(deviceId);
+  const pending = camera.start(preferredDevice || undefined);
   updateStatus();
   report("");
   try {
     if (!(await pending) || request !== cameraRequest) return;
     report("Cámara conectada.");
     if (resume) void activateGestures();
-    await listDevices().catch(() =>
-      report("La cámara funciona, pero no se pudo enumerar los dispositivos."),
-    );
+    void listDevices();
   } catch (error) {
-    if (request === cameraRequest) report(cameraError(error));
+    if (request === cameraRequest) {
+      report(cameraError(error));
+      void listDevices();
+    }
   } finally {
     if (request === cameraRequest) {
       starting = false;
@@ -314,14 +328,20 @@ button("calibrate").onclick = () => {
   resetGesture();
   report("Posición y distancia calibradas para esta sesión.");
 };
-select("devices").onchange = () => void startCamera(select("devices").value);
+select("devices").onchange = () => {
+  preferredDevice = select("devices").value;
+  if (camera.active) void startCamera();
+};
 select("side").onchange = resetGesture;
-navigator.mediaDevices?.addEventListener("devicechange", () => {
-  if (camera.active)
-    void listDevices().catch(() =>
-      report("No se pudieron actualizar las cámaras."),
-    );
+navigator.mediaDevices?.addEventListener(
+  "devicechange",
+  () => void listDevices(),
+);
+window.addEventListener("focus", () => void listDevices());
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) void listDevices();
 });
+void listDevices();
 
 input("videos").onchange = () => {
   const files = Array.from(input("videos").files ?? []);

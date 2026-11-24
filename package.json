@@ -1,6 +1,6 @@
 {
   "name": "stark-os",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,10 @@
     "preview": "vite preview",
     "test": "node --import tsx tests/core.test.ts",
     "lint": "eslint . && prettier --check .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "build:desktop": "tsc --noEmit && vite build --config apps/desktop/vite.config.mjs",
+    "desktop": "npm run build:desktop && electron apps/desktop/main.mjs",
+    "package:linux": "npm run build:desktop && sh scripts/package-linux.sh"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "0.10.32",
@@ -21,6 +24,7 @@
   "devDependencies": {
     "@types/node": "^22",
     "@types/three": "^0.187.0",
+    "electron": "^40.10.2",
     "eslint": "^10",
     "prettier": "^3",
     "tsx": "^4",

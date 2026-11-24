@@ -23,3 +23,5 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - if: runner.os == 'Linux'
+        run: npm run build:desktop

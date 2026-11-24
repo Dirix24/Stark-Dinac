@@ -1,0 +1,169 @@
+:root {
+  color-scheme: dark;
+  font:
+    15px / 1.45 system-ui,
+    sans-serif;
+  background: #17131c;
+  color: #f5edf0;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+main {
+  width: min(100% - 48px, 680px);
+  margin: 22px auto;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.logo {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+}
+h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+}
+p {
+  margin: 0;
+}
+header p,
+dd,
+footer {
+  color: #d2c1d0;
+}
+.panel {
+  padding: 16px;
+  background: #241c2a;
+  border: 1px solid #423346;
+  border-radius: 18px;
+}
+.preview {
+  position: relative;
+  height: clamp(200px, 39vh, 328px);
+  border-radius: 11px;
+  overflow: hidden;
+  background: #100e15;
+  display: grid;
+  place-items: center;
+}
+video,
+canvas {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scaleX(-1);
+}
+canvas {
+  pointer-events: none;
+}
+#state {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: #fff5f5;
+  background: #18101ce8;
+}
+#state[data-live] {
+  border-left: 3px solid #ff937d;
+}
+.settings,
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.settings label {
+  flex-shrink: 0;
+  font-weight: 600;
+}
+select,
+button {
+  font: inherit;
+  color: inherit;
+  background: #322638;
+  border: 1px solid #59435e;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+select {
+  flex: 1;
+  min-width: 0;
+}
+button {
+  min-height: 42px;
+  cursor: pointer;
+}
+button:disabled,
+select:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+#control-toggle:enabled {
+  background: #ff937d;
+  color: #251821;
+  font-weight: 650;
+}
+:focus-visible {
+  outline: 2px solid #ffb4a5;
+  outline-offset: 3px;
+}
+#message:not(:empty) {
+  margin-top: 10px;
+  color: #ffb4a5;
+}
+.gestures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin: 16px 0;
+}
+dt {
+  font-weight: 700;
+}
+dd {
+  margin: 3px 0 0;
+}
+footer {
+  font-size: 0.9rem;
+}
+kbd {
+  border: 1px solid #59435e;
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.hands {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.hands span {
+  opacity: 0.65;
+  border: 1px solid #59435e;
+  border-radius: 20px;
+  padding: 3px 12px;
+}
+.hands span[data-detected] {
+  opacity: 1;
+  border-color: currentColor;
+}
+#left-hand {
+  color: #60aaff;
+}
+#right-hand {
+  color: #53e5a2;
+}

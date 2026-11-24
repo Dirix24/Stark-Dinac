@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; connect-src 'self' https://storage.googleapis.com; img-src 'self' data:; media-src 'self' blob:;"
+    />
+    <title>Stark Dinac</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <img class="logo" src="./logo.png" alt="" />
+        <div>
+          <h1>Stark Dinac</h1>
+          <p>Control del escritorio con la mano</p>
+        </div>
+      </header>
+      <section class="panel" aria-label="Cámara y control">
+        <div class="preview">
+          <video id="camera" muted playsinline></video>
+          <canvas
+            id="landmarks"
+            width="640"
+            height="480"
+            aria-hidden="true"
+          ></canvas>
+          <span id="state">Cámara apagada</span>
+        </div>
+        <div class="hands" aria-label="Manos detectadas">
+          <span id="left-hand">Izquierda</span>
+          <span id="right-hand">Derecha</span>
+        </div>
+        <div class="settings">
+          <label for="cameras">Cámara</label>
+          <select id="cameras" disabled>
+            <option value="">Automática</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="camera-toggle" type="button">Activar cámara</button>
+          <button id="control-toggle" type="button" disabled>
+            Activar control
+          </button>
+        </div>
+        <p id="message" role="status"></p>
+      </section>
+      <dl class="gestures">
+        <div>
+          <dt>Puntero y selección</dt>
+          <dd>
+            Mueve el índice de cualquiera de las manos. Junta pulgar e índice y
+            suelta para hacer clic.
+          </dd>
+        </div>
+        <div>
+          <dt>Mover ventana</dt>
+          <dd>
+            Apunta a la barra de título, mantén el pellizco y desplaza la mano.
+          </dd>
+        </div>
+        <div>
+          <dt>Tamaño con una mano</dt>
+          <dd>
+            Selecciona una ventana. Junta pulgar y dedo medio. Sube para ampliar
+            o baja para reducir.
+          </dd>
+        </div>
+        <div>
+          <dt>Tamaño con dos manos</dt>
+          <dd>
+            Pellizca con pulgar e índice en ambas manos. Sepáralas para ampliar
+            o júntalas para reducir.
+          </dd>
+        </div>
+      </dl>
+      <footer>
+        Pausa desde cualquier ventana con <kbd>Ctrl</kbd> + <kbd>Mayús</kbd> +
+        <kbd>F8</kbd>.
+      </footer>
+    </main>
+    <script type="module" src="./renderer.ts"></script>
+  </body>
+</html>

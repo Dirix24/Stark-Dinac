@@ -1,10 +1,51 @@
-# STARK OS — Universal Holographic Gesture Control
+# Stark Dinac
 
-Aplicación web de control gestual con cámara, reproductor de vídeo y editor 3D.
-La primera entrega se centra en controlar las herramientas de la propia aplicación
-mediante una o dos manos detectadas con MediaPipe.
+<img src="apps/desktop/logo.png" width="112" alt="Logo de Stark Dinac">
 
-## Instalación y ejecución
+Stark Dinac controla el escritorio con una o dos manos frente a una cámara.
+Incluye una aplicación de escritorio para Linux X11 y una versión web con
+reproductor de vídeo y editor 3D.
+
+## Aplicación de escritorio para Linux X11
+
+En MX Linux con Xfce y X11 puedes instalar el paquete Debian para 64 bits
+y abrir **Stark Dinac** desde el menú. Para ejecutarlo desde el repositorio,
+instala Node.js 22 y ejecuta:
+
+```sh
+sudo apt install xdotool
+npm ci
+npm run desktop
+```
+
+Pulsa **Activar cámara** y elige un dispositivo si aparecen varios. Luego
+pulsa **Activar control**. La vista marca la mano **izquierda en azul** y la
+**derecha en verde**. Cuando hay dos manos visibles, el puntero sigue la que
+ya estabas usando hasta que la bajes.
+
+| Acción                          | Gesto                                                                                                                                  |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Mover el puntero                | Mueve el índice de cualquiera de las manos.                                                                                            |
+| Seleccionar o hacer clic        | Junta el pulgar y el índice hasta que aparezca **Botón pulsado** y suelta.                                                             |
+| Mover una ventana               | Sitúa el puntero en la barra de título, mantén el pellizco de índice y pulgar y desplaza la mano.                                      |
+| Ampliar o reducir con una mano  | Selecciona la ventana. Junta el pulgar y el dedo medio. Sube la mano para ampliar o bájala para reducir.                               |
+| Ampliar o reducir con dos manos | Selecciona la ventana. Junta pulgar e índice en las dos manos al mismo tiempo. Separa las manos para ampliar o acércalas para reducir. |
+
+Suelta el gesto para terminar. La aplicación cambia el tamaño de la ventana
+activa. Si está maximizada, restaura su tamaño antes de usar el gesto.
+Pulsa **Ctrl + Mayús + F8** para pausar desde cualquier ventana.
+
+El seguimiento se ejecuta localmente y requiere conexión para descargar el
+modelo de MediaPipe al activar el control. El control nativo requiere Linux
+X11. La versión web está disponible para los demás entornos. Para generar e
+instalar un paquete en MX Linux x86_64, ejecuta:
+
+```sh
+npm run package:linux
+sudo apt install ./stark-dinac_0.2.0_amd64.deb
+```
+
+## Instalación y ejecución de la versión web
 
 Requisitos: Node.js 22 LTS, npm y un navegador moderno. La cámara requiere
 HTTPS o localhost. El editor necesita WebGL 2.
@@ -22,8 +63,11 @@ Abre la URL local que muestra Vite. Para generar la versión estática ejecuta
 
 ## Cámara y privacidad
 
-1. Pulsa **Probar cámara** y concede permiso en el navegador.
-2. Selecciona otra cámara si se muestran varios dispositivos.
+1. Pulsa **Activar cámara** y concede permiso en el navegador. La aplicación
+   abre una cámara automáticamente y actualiza la lista al recibir el permiso.
+2. Si hay varias cámaras disponibles, usa **Elegir cámara** para cambiar de
+   dispositivo. Si el navegador ya muestra las cámaras antes de pedir permiso,
+   también puedes elegir una antes de activarla.
 3. Pulsa **Activar gestos**. La aplicación descarga el modelo y los archivos
    WASM de MediaPipe desde Google y jsDelivr. Las imágenes de la cámara se
    procesan en el navegador. Los vídeos y las escenas locales también
@@ -72,7 +116,10 @@ exportación de escenas JSON y exportación de modelos GLB.
 
 Si el navegador no abre la cámara, revisa el permiso del sitio y cierra
 otras aplicaciones que puedan estar usándola. Si faltan cámaras, comprueba
-la conexión y vuelve a abrir la vista previa. Si MediaPipe no carga,
+la conexión y vuelve a la pestaña para actualizar la lista. En Linux (X11 o
+Wayland), si el navegador se instaló con Flatpak o Snap, comprueba también
+que el paquete tenga acceso a la cámara. En macOS y Windows, comprueba el
+acceso del navegador en los ajustes de privacidad del sistema. Si MediaPipe no carga,
 comprueba el acceso a jsDelivr y Google Cloud Storage. Para mejorar el
 rendimiento, prueba el modo de 15 FPS y usa iluminación uniforme. Los
 formatos de vídeo admitidos dependen del navegador.

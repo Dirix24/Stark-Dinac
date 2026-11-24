@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { DesktopGestures, type Side } from "../apps/desktop/gestures";
+import { GesturePointer } from "../apps/desktop/pointer";
 import { Camera, cameraError } from "../packages/camera-engine";
 import { classify, GestureGate, type Point } from "../packages/gesture-engine";
 import { VideoEngine } from "../packages/video-engine";
@@ -53,6 +55,48 @@ test("camera starts only when requested, hides the preview and releases the stre
   assert.equal(track.readyState, "ended");
   assert.equal(video.srcObject, null);
   assert.equal(camera.active, false);
+});
+
+test("camera discovery exposes only distinct selectable video inputs", async () => {
+  const { video, preview } = fixture();
+  const sources = [
+    { kind: "videoinput", deviceId: "", label: "" },
+    { kind: "audioinput", deviceId: "mic", label: "Microphone" },
+    { kind: "videoinput", deviceId: "cam-1", label: "Integrated" },
+    { kind: "videoinput", deviceId: "cam-1", label: "Integrated" },
+    { kind: "videoinput", deviceId: "cam-2", label: "" },
+  ];
+  const media = {
+    enumerateDevices: async () => sources,
+  } as unknown as MediaDevices;
+  const camera = new Camera(video, preview, () => {}, media);
+
+  assert.deepEqual(await camera.devices(), [sources[2], sources[4]]);
+  assert.equal(camera.active, false);
+});
+
+test("camera capture uses the requested device or lets the browser choose", async () => {
+  const { video, preview } = fixture();
+  const requests: MediaStreamConstraints[] = [];
+  const media = {
+    getUserMedia: async (constraints: MediaStreamConstraints) => {
+      requests.push(constraints);
+      return fixture().stream;
+    },
+  } as MediaDevices;
+  const camera = new Camera(video, preview, () => {}, media);
+
+  await camera.start("cam-2");
+  await camera.start();
+  assert.deepEqual((requests[0].video as MediaTrackConstraints).deviceId, {
+    exact: "cam-2",
+  });
+  assert.equal(
+    (requests[1].video as MediaTrackConstraints).deviceId,
+    undefined,
+  );
+  assert.ok(requests.every(({ audio }) => audio === false));
+  camera.stop();
 });
 
 test("stopping while permission is pending releases late tracks", async () => {
@@ -112,6 +156,93 @@ test("loss of the input track clears the active preview", async () => {
   track.dispatchEvent(new Event("ended"));
   assert.equal(ended, 1);
   assert.equal(video.srcObject, null);
+});
+
+test("desktop pointer holds still for a click and drags while the pinch is held", () => {
+  const pointer = new GesturePointer();
+  const hand = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.5, z: 0 }));
+  hand[0].y = 0.7;
+  hand[4].x = 0.65;
+  const initial = pointer.update(hand, 0);
+  assert.ok(initial.x !== undefined && Math.abs(initial.x - 0.5) < 1e-9);
+  assert.equal(initial.y, 0.5);
+  assert.equal(initial.down, false);
+
+  hand[8].x = 0.62;
+  assert.deepEqual(pointer.update(hand, 30), initial);
+  assert.deepEqual(pointer.update(hand, 134), initial);
+  assert.deepEqual(pointer.update(hand, 135), { ...initial, down: true });
+
+  hand[9].x = 0.35;
+  const dragged = pointer.update(hand, 170);
+  assert.ok(dragged.x !== undefined && dragged.x > initial.x);
+  assert.equal(dragged.down, true);
+
+  hand[4].x = 0.45;
+  assert.deepEqual(pointer.update(hand, 200), { ...dragged, down: false });
+  assert.deepEqual(pointer.update(undefined, 230), { down: false });
+});
+
+function trackedHand(
+  side: Side,
+  x: number,
+  y: number,
+  pinch?: "index" | "middle",
+) {
+  const points = Array.from({ length: 21 }, () => ({ x, y, z: 0 }));
+  points[0].y += 0.2;
+  points[4].x += 0.14;
+  if (pinch === "index") points[8].x += 0.13;
+  if (pinch === "middle") points[12].x += 0.13;
+  return { side, points };
+}
+
+test("either hand can resize with the middle-finger pinch", () => {
+  for (const side of ["Left", "Right"] as const) {
+    const gestures = new DesktopGestures();
+    const at = (y: number) => trackedHand(side, 0.4, y, "middle");
+    assert.deepEqual(gestures.update([at(0.5)], 0), { down: false });
+    const baseline = gestures.update([at(0.5)], 130);
+    assert.equal(baseline.resize?.scale, 1);
+    const larger = gestures.update([at(0.35)], 160);
+    const smaller = gestures.update([at(0.75)], 190);
+    assert.ok(larger.resize && larger.resize.scale > 1);
+    assert.ok(smaller.resize && smaller.resize.scale < 1);
+    assert.deepEqual(gestures.update([trackedHand(side, 0.4, 0.5)], 220), {
+      down: false,
+    });
+  }
+});
+
+test("two hands resize in both directions without clicking when one hand releases", () => {
+  const gestures = new DesktopGestures();
+  const at = (left: number, right: number) => [
+    trackedHand("Left", left, 0.5, "index"),
+    trackedHand("Right", right, 0.5, "index"),
+  ];
+  assert.deepEqual(gestures.update(at(0.3, 0.6), 0), { down: false });
+  assert.equal(gestures.update(at(0.3, 0.6).reverse(), 130).resize?.scale, 1);
+  const larger = gestures.update(at(0.24, 0.67), 160);
+  const smaller = gestures.update(at(0.37, 0.53), 190);
+  assert.ok(larger.resize && larger.resize.scale > 1);
+  assert.ok(smaller.resize && smaller.resize.scale < 1);
+  assert.deepEqual(gestures.update(at(0.37, 0.53).slice(0, 1), 220), {
+    down: false,
+  });
+  assert.deepEqual(gestures.update(at(0.37, 0.53).slice(0, 1), 400), {
+    down: false,
+  });
+});
+
+test("with both hands visible the pointer sticks to the current hand", () => {
+  const gestures = new DesktopGestures();
+  const left = trackedHand("Left", 0.3, 0.5);
+  const right = trackedHand("Right", 0.6, 0.5);
+  const first = gestures.update([left, right], 0);
+  assert.deepEqual(gestures.update([right, left], 33), first);
+  assert.deepEqual(gestures.update([right], 66), { down: false });
+  gestures.update([right], 99);
+  assert.ok(gestures.update([right], 132).x !== first.x);
 });
 
 function landmarks(pose: "palm" | "pinch" | "fist"): Point[] {
